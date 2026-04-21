@@ -1,17 +1,11 @@
-// ─── Configuration ───────────────────────────────────────────────────────────
-// FAMILY_CALENDAR_ID: found in Google Calendar > Settings > [calendar] > Calendar ID
-// WORK_EMAIL:         the address to invite to every family event
-// DAYS_AHEAD:         how far into the future to sync (default 180 days)
-// ─────────────────────────────────────────────────────────────────────────────
-var FAMILY_CALENDAR_ID = 'your-family-calendar-id@group.calendar.google.com';
-var WORK_EMAIL         = 'you@work.com';
-var DAYS_AHEAD         = 180;
+var DAYS_AHEAD = 180;
 
 // ─── Main sync function ───────────────────────────────────────────────────────
 function syncFamilyToWork() {
-  var calendar = CalendarApp.getCalendarById(FAMILY_CALENDAR_ID);
+  var config = getConfig_();
+  var calendar = CalendarApp.getCalendarById(config.familyCalendarId);
   if (!calendar) {
-    Logger.log('ERROR: Calendar not found — check FAMILY_CALENDAR_ID: ' + FAMILY_CALENDAR_ID);
+    Logger.log('ERROR: Calendar not found — check FAMILY_CALENDAR_ID in Script Properties.');
     return;
   }
 
@@ -19,7 +13,7 @@ function syncFamilyToWork() {
   var end = new Date(now.getTime() + DAYS_AHEAD * 24 * 60 * 60 * 1000);
   var events = calendar.getEvents(now, end);
 
-  Logger.log('Syncing ' + events.length + ' upcoming events to ' + WORK_EMAIL);
+  Logger.log('Syncing ' + events.length + ' upcoming events to ' + config.workEmail);
 
   var invited = 0;
   var skipped = 0;
@@ -28,11 +22,11 @@ function syncFamilyToWork() {
   for (var i = 0; i < events.length; i++) {
     var event = events[i];
     try {
-      if (isAlreadyInvited_(event, WORK_EMAIL)) {
+      if (isAlreadyInvited_(event, config.workEmail)) {
         skipped++;
         continue;
       }
-      event.addGuest(WORK_EMAIL);
+      event.addGuest(config.workEmail);
       invited++;
       Logger.log('Invited: "' + event.getTitle() + '" on ' + event.getStartTime());
     } catch (e) {
@@ -46,11 +40,6 @@ function syncFamilyToWork() {
 
 // ─── Trigger management ───────────────────────────────────────────────────────
 
-/**
- * Run this once manually from the Apps Script editor to install the
- * 30-minute recurring trigger.  Re-running it is safe; it removes any
- * existing syncFamilyToWork triggers first.
- */
 function setupTrigger() {
   var triggers = ScriptApp.getProjectTriggers();
   for (var i = 0; i < triggers.length; i++) {
@@ -67,9 +56,6 @@ function setupTrigger() {
   Logger.log('Trigger created: syncFamilyToWork will run every 30 minutes.');
 }
 
-/**
- * Removes all syncFamilyToWork triggers without creating a new one.
- */
 function removeTrigger() {
   var triggers = ScriptApp.getProjectTriggers();
   var removed = 0;
@@ -83,6 +69,16 @@ function removeTrigger() {
 }
 
 // ─── Helpers ──────────────────────────────────────────────────────────────────
+
+function getConfig_() {
+  var props = PropertiesService.getScriptProperties();
+  var familyCalendarId = props.getProperty('FAMILY_CALENDAR_ID');
+  var workEmail        = props.getProperty('WORK_EMAIL');
+  if (!familyCalendarId || !workEmail) {
+    throw new Error('Missing configuration. Run configure() to set FAMILY_CALENDAR_ID and WORK_EMAIL.');
+  }
+  return { familyCalendarId: familyCalendarId, workEmail: workEmail };
+}
 
 function isAlreadyInvited_(event, email) {
   var guests = event.getGuestList(true); // true = include calendar owner

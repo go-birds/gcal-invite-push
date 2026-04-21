@@ -1,0 +1,10 @@
+// Copy this file to config.gs (which is gitignored) and fill in your values.
+// Run configure() once from the Apps Script editor to persist the secrets as
+// Script Properties.  After that this file is no longer needed at runtime.
+function configure() {
+  PropertiesService.getScriptProperties().setProperties({
+    FAMILY_CALENDAR_ID: 'your-family-calendar-id@group.calendar.google.com',
+    WORK_EMAIL:         'you@work.com'
+  });
+  Logger.log('Configuration saved to Script Properties.');
+}
