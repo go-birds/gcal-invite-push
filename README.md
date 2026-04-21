@@ -17,70 +17,80 @@ Secrets (calendar ID and work email) are stored as **Script Properties** inside 
 
 ## Setup
 
-### 1. Create a new Apps Script project
+### 1. Find your Family Calendar ID
 
-Go to [script.google.com](https://script.google.com) and click **New project**.
+1. Open [Google Calendar](https://calendar.google.com).
+2. Hover over your family calendar in the left sidebar → click the **three-dot menu** → **Settings and sharing**.
+3. Scroll down to **Integrate calendar** and copy the **Calendar ID** (looks like `abc123@group.calendar.google.com`).
 
-### 2. Copy the source files
+### 2. Create a new Apps Script project
 
-Copy the contents of these files into your Apps Script project:
+Go to [script.google.com](https://script.google.com) and click **New project**. Give it a name (e.g. "Calendar Sync").
 
-| Local file | Apps Script file |
-|---|---|
-| `Code.gs` | `Code.gs` (replace the placeholder) |
-| `config.gs.example` → rename to `config.gs` | `config.gs` (new file) |
-| `appsscript.json` | enable manifest in Project Settings, then paste |
+### 3. Add Code.gs
 
-### 3. Configure your secrets
+Click on `Code.gs` in the left sidebar. Replace all existing content with the contents of `Code.gs` from this repo. Save with **Ctrl+S**.
 
-In your local copy of the repo (not committed to git):
+### 4. Add config.gs
 
-```bash
-cp config.gs.example config.gs
-```
-
-Edit `config.gs` and fill in your values:
+1. Click the **+** button next to "Files" → **Script**.
+2. Name it `config` (just `config` — the editor automatically appends `.gs`, so typing `config.gs` would produce `config.gs.gs`).
+3. Paste in the contents of `config.gs.example` from this repo.
+4. Fill in your own values:
 
 ```javascript
 FAMILY_CALENDAR_ID: 'your-family-calendar-id@group.calendar.google.com',
 WORK_EMAIL:         'you@work.com'
 ```
 
-**Finding your Family Calendar ID:** Google Calendar → hover over the calendar → three-dot menu → **Settings and sharing** → scroll to **Integrate calendar** → copy the Calendar ID.
+Save with **Ctrl+S**.
 
-### 4. Run configure() to save secrets
+### 5. Update appsscript.json
 
-In the Apps Script editor, select **`configure`** from the function dropdown and click **Run**. Approve the OAuth prompt.
+1. Click the **gear icon** (Project Settings) in the left sidebar.
+2. Check **"Show appsscript.json manifest file in editor"**.
+3. Go back to the Editor (`< >` icon), click `appsscript.json` in the file list.
+4. Replace its contents with the contents of `appsscript.json` from this repo. Save.
 
-This writes your secrets into Script Properties (Google's server-side secret store). `config.gs` is never needed again at runtime — the secrets now live in the project, not in any file.
+### 6. Run configure()
 
-### 5. Install the trigger
+1. Click `config.gs` in the file list so it's the active file.
+2. In the toolbar, click the function dropdown (next to the ▶ Run button) and select **`configure`**.
+3. Click **▶ Run**.
+4. Approve the OAuth permissions when prompted.
 
-Select **`setupTrigger`** and click **Run**. This installs a 30-minute recurring trigger for `syncFamilyToWork`.
+This saves your calendar ID and work email as Script Properties on Google's servers. They are never stored in any file.
 
-### 6. Verify
+### 7. Install the trigger
 
-Select **`syncFamilyToWork`** and run it once manually. Check **Executions** (left sidebar) or **View → Logs** to confirm events were processed.
+1. In the function dropdown select **`setupTrigger`**.
+2. Click **▶ Run**.
+
+This installs a 30-minute recurring trigger. Re-running `setupTrigger` at any time is safe — it removes the old trigger before creating a new one.
+
+### 8. Verify
+
+1. Select **`syncFamilyToWork`** from the function dropdown and click **▶ Run**.
+2. Click **Execution log** in the toolbar to see output. You should see something like:
+
+```
+Syncing 12 upcoming events to you@work.com
+Invited: "Family dinner" on Sat Apr 25 2026 ...
+Done — invited: 3, already present: 9, errors: 0
+```
+
+The script is now live. Check past runs anytime under the **Executions** tab (clock icon in the left sidebar).
 
 ---
 
-## Optional: deploy with clasp
+## Files in this repo
 
-[clasp](https://github.com/google/clasp) lets you push changes from this repo to Apps Script via the CLI.
-
-```bash
-npm install -g @google/clasp
-clasp login
-```
-
-Replace `YOUR_SCRIPT_ID_HERE` in `.clasp.json` with the ID from **Project Settings**, then:
-
-```bash
-clasp push   # upload local files → Apps Script
-clasp pull   # download remote changes → local
-```
-
-`config.gs` is gitignored so it won't be committed to GitHub, but `clasp push` will still upload it to your Apps Script project (which is what you want — it's how `configure()` gets deployed).
+| File | Purpose |
+|---|---|
+| `Code.gs` | Main sync logic and trigger management |
+| `config.gs.example` | Template — copy to `config.gs` and fill in your values |
+| `appsscript.json` | Apps Script manifest (OAuth scopes, runtime) |
+| `.clasp.json` | Config template for optional clasp CLI deployment |
 
 ---
 
@@ -95,11 +105,37 @@ clasp pull   # download remote changes → local
 
 ---
 
+## Adjusting the sync window
+
+Change `DAYS_AHEAD` at the top of `Code.gs` to control how far into the future events are synced (default: 180 days).
+
+---
+
+## Optional: deploy with clasp
+
+[clasp](https://github.com/google/clasp) lets you manage the script from this repo via the CLI instead of copy-pasting files manually.
+
+```bash
+npm install -g @google/clasp
+clasp login
+```
+
+Replace `YOUR_SCRIPT_ID_HERE` in `.clasp.json` with your script's ID (found in **Project Settings**), then:
+
+```bash
+clasp push   # upload local files → Apps Script
+clasp pull   # download remote changes → local
+```
+
+`config.gs` is gitignored so it will never be committed to GitHub, but `clasp push` will still upload it to your Apps Script project (which is intentional — it's how `configure()` gets deployed).
+
+---
+
 ## Security model
 
 | What | Where it lives | In git? |
 |---|---|---|
-| Calendar ID & work email | Script Properties (Google servers) | No |
+| Calendar ID & work email | Script Properties (Google's servers) | No |
 | `config.gs` (sets the above) | Local only, gitignored | No |
 | `config.gs.example` | Repo (placeholder values only) | Yes |
 | All other source files | Repo | Yes |
