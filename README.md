@@ -1,141 +1,261 @@
-# gcal-invite-push
+# Spawn
 
-Automatically invites your work email to every event on your family Google Calendar. Runs every 30 minutes via a Google Apps Script time-based trigger.
+Spawn is a tiny robot boss for Codex agents.
 
----
+It lets you say:
 
-## How it works
+> I want three little helpers. One works on this folder. One works on that folder. One works on another folder. Do not let them mess up each other's toys.
 
-1. The script fetches all upcoming events (next 180 days) from your family calendar.
-2. For each event it checks whether your work email is already a guest.
-3. If not, it adds your work email as a guest.
-4. A time-based trigger fires this sync every 30 minutes.
+Spawn gives each helper its own sandbox, checks its work, runs tests, and only then lets the code go into `main`.
 
-Secrets (calendar ID and work email) are stored as **Script Properties** inside your Apps Script project — never in source files or this repository.
+## Like You Are 5
 
----
+Imagine your repo is a big LEGO table.
 
-## Setup
+You want three kids to build at the same time:
 
-### 1. Find your Family Calendar ID
+- one kid builds the red house
+- one kid builds the blue car
+- one kid builds the green tower
 
-1. Open [Google Calendar](https://calendar.google.com).
-2. Hover over your family calendar in the left sidebar → click the **three-dot menu** → **Settings and sharing**.
-3. Scroll down to **Integrate calendar** and copy the **Calendar ID** (looks like `abc123@group.calendar.google.com`).
+But you do not want the red-house kid touching the blue car.
 
-### 2. Create a new Apps Script project
+Spawn does this:
 
-Go to [script.google.com](https://script.google.com) and click **New project**. Give it a name (e.g. "Calendar Sync").
+1. Gives each kid their own table.
+2. Gives each kid a note saying what they may touch.
+3. Lets all kids build at the same time.
+4. Checks that each kid only touched their own pieces.
+5. Checks that the whole LEGO set still works.
+6. Adds the good work back to the main table one kid at a time.
 
-### 3. Add Code.gs
+## Folder Contents
 
-Click on `Code.gs` in the left sidebar. Replace all existing content with the contents of `Code.gs` from this repo. Save with **Ctrl+S**.
-
-### 4. Add config.gs
-
-1. Click the **+** button next to "Files" → **Script**.
-2. Name it `config` (just `config` — the editor automatically appends `.gs`, so typing `config.gs` would produce `config.gs.gs`).
-3. Paste in the contents of `config.gs.example` from this repo.
-4. Fill in your own values:
-
-```javascript
-FAMILY_CALENDAR_ID: 'your-family-calendar-id@group.calendar.google.com',
-WORK_EMAIL:         'you@work.com'
+```text
+spawn/
+  CHARTER.md              # The laws of Spawn
+  README.md               # This file
+  agents.template.yml     # Copy this to agents.yml and fill it in
+  orchestrator.py         # The script that runs the agents
+  .cursor/rules/
+    spawn-charter.mdc     # Cursor/Codex rule about checking the charter
 ```
 
-Save with **Ctrl+S**.
+## Install
 
-### 5. Update appsscript.json
-
-1. Click the **gear icon** (Project Settings) in the left sidebar.
-2. Check **"Show appsscript.json manifest file in editor"**.
-3. Go back to the Editor (`< >` icon), click `appsscript.json` in the file list.
-4. Replace its contents with the contents of `appsscript.json` from this repo. Save.
-
-### 6. Run configure()
-
-1. Click `config.gs` in the file list so it's the active file.
-2. In the toolbar, click the function dropdown (next to the ▶ Run button) and select **`configure`**.
-3. Click **▶ Run**.
-4. Approve the OAuth permissions when prompted.
-
-This saves your calendar ID and work email as Script Properties on Google's servers. They are never stored in any file.
-
-### 7. Install the trigger
-
-1. In the function dropdown select **`setupTrigger`**.
-2. Click **▶ Run**.
-
-This installs a 30-minute recurring trigger. Re-running `setupTrigger` at any time is safe — it removes the old trigger before creating a new one.
-
-### 8. Verify
-
-1. Select **`syncFamilyToWork`** from the function dropdown and click **▶ Run**.
-2. Click **Execution log** in the toolbar to see output. You should see something like:
-
-```
-Syncing 12 upcoming events to you@work.com
-Invited: "Family dinner" on Sat Apr 25 2026 ...
-Done — invited: 3, already present: 9, errors: 0
-```
-
-The script is now live. Check past runs anytime under the **Executions** tab (clock icon in the left sidebar).
-
----
-
-## Files in this repo
-
-| File | Purpose |
-|---|---|
-| `Code.gs` | Main sync logic and trigger management |
-| `config.gs.example` | Template — copy to `config.gs` and fill in your values |
-| `appsscript.json` | Apps Script manifest (OAuth scopes, runtime) |
-| `.clasp.json` | Config template for optional clasp CLI deployment |
-
----
-
-## Utility functions
-
-| Function | Purpose |
-|---|---|
-| `configure()` | Save secrets to Script Properties (run once) |
-| `syncFamilyToWork()` | Run a sync immediately |
-| `setupTrigger()` | Install (or reinstall) the 30-minute trigger |
-| `removeTrigger()` | Delete the trigger without re-creating it |
-
----
-
-## Adjusting the sync window
-
-Change `DAYS_AHEAD` at the top of `Code.gs` to control how far into the future events are synced (default: 180 days).
-
----
-
-## Optional: deploy with clasp
-
-[clasp](https://github.com/google/clasp) lets you manage the script from this repo via the CLI instead of copy-pasting files manually.
+From your repo root, copy this folder in:
 
 ```bash
-npm install -g @google/clasp
-clasp login
+cp -R spawn ./spawn
 ```
 
-Replace `YOUR_SCRIPT_ID_HERE` in `.clasp.json` with your script's ID (found in **Project Settings**), then:
+Install the Python dependency:
 
 ```bash
-clasp push   # upload local files → Apps Script
-clasp pull   # download remote changes → local
+pip install pyyaml
 ```
 
-`config.gs` is gitignored so it will never be committed to GitHub, but `clasp push` will still upload it to your Apps Script project (which is intentional — it's how `configure()` gets deployed).
+Make sure Codex is installed and works in your terminal:
 
----
+```bash
+codex --help
+```
 
-## Security model
+## Step 1: Copy the Template
 
-| What | Where it lives | In git? |
-|---|---|---|
-| Calendar ID & work email | Script Properties (Google's servers) | No |
-| `config.gs` (sets the above) | Local only, gitignored | No |
-| `config.gs.example` | Repo (placeholder values only) | Yes |
-| All other source files | Repo | Yes |
+From your repo root:
+
+```bash
+cp spawn/agents.template.yml agents.yml
+```
+
+Now edit `agents.yml`.
+
+## Step 2: Fill In Your Agents
+
+Example for an arithmetic repo:
+
+```yaml
+base_branch: main
+test_command: pytest
+
+execution:
+  mode: parallel
+  max_parallel: 3
+
+shared_paths_global: []
+
+agents:
+  - name: addition
+    task: |
+      Improve addition logic.
+      Keep the public behavior correct.
+    paths:
+      - src/add.py
+      - tests/test_add.py
+
+  - name: subtraction
+    task: |
+      Improve subtraction logic.
+      Keep the public behavior correct.
+    paths:
+      - src/subtract.py
+      - tests/test_subtract.py
+
+  - name: multiplication
+    task: |
+      Improve multiplication logic.
+      Keep the public behavior correct.
+    paths:
+      - src/multiply.py
+      - tests/test_multiply.py
+```
+
+## Step 3: Run Spawn
+
+From your repo root:
+
+```bash
+python spawn/orchestrator.py
+```
+
+## What Happens
+
+Spawn creates folders next to your repo:
+
+```text
+../wt-addition
+../wt-subtraction
+../wt-multiplication
+```
+
+Each one is a git worktree.
+
+Each agent gets its own branch:
+
+```text
+agent/addition
+agent/subtraction
+agent/multiplication
+```
+
+Then Spawn runs Codex in each worktree.
+
+## Allowed Paths
+
+Each agent can only edit the paths you list.
+
+Exact file:
+
+```yaml
+paths:
+  - src/add.py
+```
+
+Whole folder:
+
+```yaml
+paths:
+  - src/add/
+```
+
+Glob pattern:
+
+```yaml
+paths:
+  - src/add/**
+  - tests/test_*.py
+```
+
+## Shared Paths
+
+Shared paths are files that more than one agent may edit.
+
+Use these carefully.
+
+```yaml
+shared_paths_global:
+  - README.md
+```
+
+Or per agent:
+
+```yaml
+agents:
+  - name: addition
+    paths:
+      - src/add.py
+    shared_paths:
+      - pyproject.toml
+```
+
+Shared files are where conflicts usually happen.
+
+## Protected File: CHARTER.md
+
+`CHARTER.md` is protected.
+
+Agents are told not to edit it.
+
+The orchestrator also checks the diff and rejects any agent that changes it.
+
+Only the user may approve changes to the charter.
+
+## Cursor / Codex Rule
+
+This folder includes:
+
+```text
+.cursor/rules/spawn-charter.mdc
+```
+
+That rule says:
+
+- check `CHARTER.md` before major changes
+- do not change `CHARTER.md` without user permission
+- keep changes consistent with the goal of Spawn
+
+If your repo already has `.cursor/rules`, copy the rule there:
+
+```bash
+mkdir -p .cursor/rules
+cp spawn/.cursor/rules/spawn-charter.mdc .cursor/rules/spawn-charter.mdc
+```
+
+## Why Agents Are Parallel But Merges Are Not
+
+Agents run at the same time:
+
+```text
+addition      starts
+subtraction   starts
+multiplication starts
+```
+
+But merges happen one at a time:
+
+```text
+merge addition      -> run tests
+merge subtraction   -> run tests
+merge multiplication -> run tests
+```
+
+That protects `main`.
+
+## Stop Conditions
+
+Spawn stops or rejects work when:
+
+- an agent edits a file outside its allowed paths
+- an agent edits `CHARTER.md`
+- tests fail
+- a merge conflict happens
+- a merge breaks the full repo test command
+
+## Example Command
+
+```bash
+python spawn/orchestrator.py
+```
+
+That is the big green button.

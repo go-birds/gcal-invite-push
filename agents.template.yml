@@ -1,0 +1,60 @@
+# Copy this file to agents.yml and fill it in for your repo.
+
+base_branch: main
+integration_branch: integration/spawn
+test_command: pytest
+setup_command: ""
+pre_agent_command: ""
+post_merge_command: ""
+
+defaults:
+  fail_on_out_of_scope: true
+  auto_commit: true
+  auto_merge: true
+  retry_on_failure: 0
+
+execution:
+  mode: parallel
+  max_parallel: 3
+
+shared_paths_global: []
+
+validation:
+  block_on_conflict: true
+  require_tests_pass: true
+  require_clean_diff: true
+
+logging:
+  verbose: true
+  save_agent_outputs: true
+  output_dir: .spawn_logs
+
+agents:
+  - name: example-agent-one
+    description: What this agent owns.
+    task: |
+      Explain exactly what Codex should do.
+      Keep this task focused.
+    paths:
+      - src/example_one/**
+      - tests/test_example_one.py
+    shared_paths: []
+    read_only_paths: []
+    setup_command: ""
+    test_command: ""
+    depends_on: []
+    priority: 100
+
+  - name: example-agent-two
+    description: What this second agent owns.
+    task: |
+      Explain exactly what Codex should do.
+    paths:
+      - src/example_two/**
+      - tests/test_example_two.py
+    shared_paths: []
+    read_only_paths: []
+    setup_command: ""
+    test_command: ""
+    depends_on: []
+    priority: 100

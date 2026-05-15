@@ -1,0 +1,29 @@
+---
+description: Rules for maintaining the Spawn Codex agent orchestrator
+alwaysApply: true
+---
+
+# Spawn Charter Rule
+
+Before making any major change to the contents of the `spawn` folder, first check `spawn/CHARTER.md`.
+
+A major change includes changes to:
+
+- orchestration behavior
+- agent prompts
+- path scope validation
+- protected-file validation
+- merge behavior
+- parallel execution
+- testing behavior
+- retry behavior
+- config shape
+- documentation that changes how users operate Spawn
+
+All major changes must remain consistent with the goals and laws in `spawn/CHARTER.md`.
+
+`spawn/CHARTER.md` is a protected file.
+
+Do not edit `spawn/CHARTER.md` unless the user explicitly gives permission to change the charter.
+
+If a requested change conflicts with `spawn/CHARTER.md`, stop and ask the user whether they want to amend the charter.
